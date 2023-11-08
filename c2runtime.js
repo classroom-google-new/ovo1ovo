@@ -4564,70 +4564,54 @@ quat4.str=function(a){return"["+a[0]+", "+a[1]+", "+a[2]+", "+a[3]+"]"};
 		cr.clearArray(this.objectRefTable);
 		this.initRendererAndLoader();
 	};
-	var anyImageHadError = false;
-	var MAX_PARALLEL_IMAGE_LOADS = 100;
-	var currentlyActiveImageLoads = 0;
-	var imageLoadQueue = [];		// array of [img, srcToSet]
-	Runtime.prototype.queueImageLoad = function (img_, src_)
-	{
-		var self = this;
-		var doneFunc = function ()
-		{
-			currentlyActiveImageLoads--;
-			self.maybeLoadNextImages();
-		};
-		img_.addEventListener("load", doneFunc);
-		img_.addEventListener("error", doneFunc);
-		imageLoadQueue.push([img_, src_]);
-		this.maybeLoadNextImages();
-	};
-	Runtime.prototype.maybeLoadNextImages = function ()
-	{
-		var next;
-		while (imageLoadQueue.length && currentlyActiveImageLoads < MAX_PARALLEL_IMAGE_LOADS)
-		{
-			currentlyActiveImageLoads++;
-			next = imageLoadQueue.shift();
-			this.setImageSrc(next[0], next[1]);
-		}
-	};
-	Runtime.prototype.waitForImageLoad = function (img_, src_)
-	{
-		img_["cocoonLazyLoad"] = true;
-		img_.onerror = function (e)
-		{
-			img_.c2error = true;
-			anyImageHadError = true;
-			if (console && console.error)
-				console.error("Error loading image '" + img_.src + "': ", e);
-		};
-		if (this.isEjecta)
-		{
-			img_.src = src_;
-		}
-		else if (!img_.src)
-		{
-			if (typeof XAPKReader !== "undefined")
-			{
-				XAPKReader.get(src_, function (expanded_url)
-				{
-					img_.src = expanded_url;
-				}, function (e)
-				{
-					img_.c2error = true;
-					anyImageHadError = true;
-					if (console && console.error)
-						console.error("Error extracting image '" + src_ + "' from expansion file: ", e);
-				});
-			}
-			else
-			{
-				img_.crossOrigin = "anonymous";			// required for Arcade sandbox compatibility
-				this.queueImageLoad(img_, src_);		// use a queue to avoid requesting all images simultaneously
-			}
-		}
-		this.wait_for_textures.push(img_);
-	};
+var anyImageHadError = false;
+var MAX_PARALLEL_IMAGE_LOADS = 100;
+var currentlyActiveImageLoads = 0;
+var imageLoadQueue = []; // array of [img, srcToSet]
+Runtime.prototype.queueImageLoad = function (img_, src_) {
+  var self = this;
+  var doneFunc = function () {
+    currentlyActiveImageLoads--;
+    self.maybeLoadNextImages();
+  };
+  img_.addEventListener("load", doneFunc);
+  img_.addEventListener("error", doneFunc);
+  img_.crossOrigin = "anonymous"; // CORS hatasını önlemek için crossOrigin özelliğini ayarlayın.
+  imageLoadQueue.push([img_, src_]);
+  this.maybeLoadNextImages();
+};
+Runtime.prototype.maybeLoadNextImages = function () {
+  var next;
+  while (imageLoadQueue.length && currentlyActiveImageLoads < MAX_PARALLEL_IMAGE_LOADS) {
+    currentlyActiveImageLoads++;
+    next = imageLoadQueue.shift();
+    this.setImageSrc(next[0], next[1]);
+  }
+};
+Runtime.prototype.waitForImageLoad = function (img_, src_) {
+  img_["cocoonLazyLoad"] = true;
+  img_.onerror = function (e) {
+    img_.c2error = true;
+    anyImageHadError = true;
+    if (console && console.error) console.error("Error loading image '" + img_.src + "': ", e);
+  };
+  if (this.isEjecta) {
+    img_.src = src_;
+  } else if (!img_.src) {
+    if (typeof XAPKReader !== "undefined") {
+      XAPKReader.get(src_, function (expanded_url) {
+        img_.src = expanded_url;
+      }, function (e) {
+        img_.c2error = true;
+        anyImageHadError = true;
+        if (console && console.error) console.error("Error extracting image '" + src_ + "' from expansion file: ", e);
+      });
+    } else {
+      this.queueImageLoad(img_, src_);
+    }
+  }
+  this.wait_for_textures.push(img_);
+};
 	Runtime.prototype.findWaitingTexture = function (src_)
 	{
 		var i, len;
