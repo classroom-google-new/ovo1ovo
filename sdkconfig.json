@@ -1,0 +1,27 @@
+{
+  "networks": [
+    "Poki",
+    "CrazyGames",
+    "GamePix",
+    "GameDistribution",
+    "GameMonetize",
+    "CoolMathGames"
+  ],
+  "name": "CoolMathGames",
+  "gameId": "1377b99c10284c229423118a941af3b1",
+  "removeSocials": false,
+  "stopAudioInBackground": false,
+  "removeMidrollRewarded": true,
+  "noReligion": true,
+  "removeServiceWorker": true,
+  "interTypes": {
+    "loader": false,
+    "mainMenuStart": false,
+    "randomskins": false,
+    "removeads": false,
+    "levelStart": true,
+    "restart": false,
+    "levelStartFromMenu": false,
+    "levelStartOnSuccess": true
+  }
+}
