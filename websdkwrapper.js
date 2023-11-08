@@ -9,20 +9,6 @@ globalThis.WebSdkWrapper = (function () {
     js.src = src;
   }
 
-  // prevent canvas from being selectable on IOS
-  (() => {
-    let style = document.createElement("style");
-    style.innerHTML = `
-  canvas {
-    user-select: none !important;
-    -webkit-user-select: none !important;
-    -moz-user-select: none !important;
-    -ms-user-select: none !important;
-  }
-  `;
-    document.head.appendChild(style);
-  })();
-
   window.addEventListener("keydown", (ev) => {
     if (["ArrowDown", "ArrowUp", " "].includes(ev.key)) {
       ev.preventDefault();
@@ -70,27 +56,22 @@ globalThis.WebSdkWrapper = (function () {
       },
       scriptSrc: "//game-cdn.poki.com/scripts/v2/poki-sdk.js",
       hasAds: true,
-      noInterstitial: false,
-      noRewarded: false,
       hasBanner: false,
       enableOnlyInProduction: false,
       implementation: {
         //async preInit(debug = false) {},
-        init(debug = false, data) {
+        init(debug = false) {
           return new Promise((resolve) => {
             sdk
               .init()
               .then(() => {
                 sdkContext.hasAdblock = false;
-                if (data.sitelock) eval(data.sitelock);
                 resolve();
               })
               .catch(() => {
                 sdkContext.hasAdblock = true;
-                if (data.sitelock) eval(data.sitelock);
                 resolve();
               });
-            if (data.sitelock) eval(data.sitelock);
             sdk.setDebug(debug);
           });
         },
@@ -133,156 +114,6 @@ globalThis.WebSdkWrapper = (function () {
       },
     },
     {
-      name: "Facebook",
-      get sdk() {
-        return globalThis.FBInstant;
-      },
-      scriptSrc: "//connect.facebook.net/en_US/sdk.js",
-      hasAds: true,
-      noInterstitial: false,
-      noRewarded: false,
-      hasBanner: true,
-      enableOnlyInProduction: true,
-      implementation: {
-        async preInit(debug = false) {
-          if (debug) {
-            FBInstant.setLoadingProgress(100);
-          }
-          await FBInstant.initializeAsync();
-          FBInstant.setLoadingProgress(100);
-        },
-        init(debug = false, data) {
-          return new Promise((resolve) => {
-            if (debug) {
-              FBInstant.setLoadingProgress(100);
-            }
-            FBInstant.setLoadingProgress(100);
-            resolve();
-          });
-        },
-        setUpEventListeners() {
-          listen("loadingStart", () => {
-            FBInstant.setLoadingProgress(0);
-          });
-          listen("loadingEnd", () => {
-            FBInstant.setLoadingProgress(100);
-          });
-          listen("gameplayStart", () => {
-            if (sdkContext.gameplayStarted) return;
-            sdkContext.gameplayStarted = true;
-            FBInstant.startGamePlayRecording();
-          });
-          listen("gameplayStop", () => {
-            if (!sdkContext.gameplayStarted) return;
-            sdkContext.gameplayStarted = false;
-            FBInstant.stopGamePlayRecording();
-          });
-          listen("interstitial", () => {
-            dispatch("adStarted", sdkContext.lastRequestedAd);
-            FBInstant.getRewardedVideoAsync(data.rewardedVideoId).then(
-              (rewardedVideo) => {
-                rewardedVideo.loadAsync().then(() => {
-                  rewardedVideo.showAsync().then(() => {
-                    dispatch("interstitialEnd", true);
-                  });
-                });
-              }
-            );
-          });
-          listen("rewarded", () => {
-            dispatch("adStarted", sdkContext.lastRequestedAd);
-            FBInstant.getRewardedVideoAsync(data.rewardedVideoId).then(
-              (rewardedVideo) => {
-                rewardedVideo.loadAsync().then(() => {
-                  rewardedVideo.showAsync().then(() => {
-                    dispatch("rewardedEnd", true);
-                  });
-                });
-              }
-            );
-          });
-          listen("happyTime", (scale) => {
-            FBInstant.setHappyModeEnabled(scale);
-          });
-        },
-      },
-    },
-    {
-      name: "Snapchat",
-      get sdk() {
-        return globalThis.SnapSdk;
-      },
-      scriptSrc: "//js.snap.com/snap.js",
-      hasAds: true,
-      noInterstitial: false,
-      noRewarded: false,
-      hasBanner: true,
-      enableOnlyInProduction: true,
-      implementation: {
-        async preInit(debug = false) {
-          if (debug) {
-            SnapSdk.setLoadingProgress(100);
-          }
-          await SnapSdk.initializeAsync();
-          SnapSdk.setLoadingProgress(100);
-        },
-        init(debug = false, data) {
-          return new Promise((resolve) => {
-            if (debug) {
-              SnapSdk.setLoadingProgress(100);
-            }
-            SnapSdk.setLoadingProgress(100);
-            resolve();
-          });
-        },
-        setUpEventListeners() {
-          listen("loadingStart", () => {
-            SnapSdk.setLoadingProgress(0);
-          });
-          listen("loadingEnd", () => {
-            SnapSdk.setLoadingProgress(100);
-          });
-          listen("gameplayStart", () => {
-            if (sdkContext.gameplayStarted) return;
-            sdkContext.gameplayStarted = true;
-            SnapSdk.startGamePlayRecording();
-          });
-          listen("gameplayStop", () => {
-            if (!sdkContext.gameplayStarted) return;
-            sdkContext.gameplayStarted = false;
-            SnapSdk.stopGamePlayRecording();
-          });
-          listen("interstitial", () => {
-            dispatch("adStarted", sdkContext.lastRequestedAd);
-            SnapSdk.getRewardedVideoAsync(data.rewardedVideoId).then(
-              (rewardedVideo) => {
-                rewardedVideo.loadAsync().then(() => {
-                  rewardedVideo.showAsync().then(() => {
-                    dispatch("interstitialEnd", true);
-                  });
-                });
-              }
-            );
-          });
-          listen("rewarded", () => {
-            dispatch("adStarted", sdkContext.lastRequestedAd);
-            SnapSdk.getRewardedVideoAsync(data.rewardedVideoId).then(
-              (rewardedVideo) => {
-                rewardedVideo.loadAsync().then(() => {
-                  rewardedVideo.showAsync().then(() => {
-                    dispatch("rewardedEnd", true);
-                  });
-                });
-              }
-            );
-          });
-          listen("happyTime", (scale) => {
-            SnapSdk.setHappyModeEnabled(scale);
-          });
-        },
-      },
-    },
-    {
       name: "CrazyGames",
       get sdk() {
         if (!sdkContext.crazysdk)
@@ -291,8 +122,6 @@ globalThis.WebSdkWrapper = (function () {
       },
       scriptSrc: "//sdk.crazygames.com/crazygames-sdk-v1.js",
       hasAds: true,
-      noInterstitial: false,
-      noRewarded: false,
       enableOnlyInProduction: false,
       hasBanner: true,
       implementation: {
@@ -362,8 +191,6 @@ globalThis.WebSdkWrapper = (function () {
       },
       scriptSrc: "//integration.gamepix.com/sdk/v3/gamepix.sdk.js",
       hasAds: true,
-      noInterstitial: false,
-      noRewarded: false,
       enableOnlyInProduction: true,
       hasBanner: false,
       implementation: {
@@ -416,8 +243,6 @@ globalThis.WebSdkWrapper = (function () {
       },
       scriptSrc: "//html5.api.gamedistribution.com/main.min.js",
       hasAds: true,
-      noInterstitial: false,
-      noRewarded: false,
       enableOnlyInProduction: true,
       hasBanner: false,
       implementation: {
@@ -497,8 +322,6 @@ globalThis.WebSdkWrapper = (function () {
       },
       scriptSrc: "//html5.api.gamedistribution.com/main.min.js",
       hasAds: true,
-      noInterstitial: false,
-      noRewarded: false,
       enableOnlyInProduction: true,
       hasBanner: false,
       implementation: {
@@ -558,13 +381,8 @@ globalThis.WebSdkWrapper = (function () {
       get sdk() {
         return null;
       },
-      scriptSrc: [
-        // "https://ajax.googleapis.com/ajax/libs/jquery/3.6.3/jquery.min.js",
-        "https://www.coolmathgames.com/sites/default/files/cmg-ads.js",
-      ],
-      hasAds: true,
-      noInterstitial: false,
-      noRewarded: true,
+      scriptSrc: null,
+      hasAds: false,
       enableOnlyInProduction: true,
       hasBanner: false,
       implementation: {
@@ -580,25 +398,6 @@ globalThis.WebSdkWrapper = (function () {
           listen("levelStart", (level) => {
             parent.cmgGameEvent("start", level.toString());
           });
-
-          // New event listeners for adBreakStart and adBreakComplete
-          document.addEventListener("adBreakStart", () => {
-            // Pause the game and sound here²
-            dispatch("adStarted", sdkContext.lastRequestedAd);
-          });
-          document.addEventListener("adBreakComplete", () => {
-            // Resume the game and sound here
-            if (sdkContext.lastRequestedAd === "interstitial")
-              dispatch("interstitialEnd", true);
-            else dispatch("rewardedEnd", true);
-          });
-
-          // Interstitial and Rewarded events
-          listen("interstitial", () => {
-            window.cmgAdBreak();
-          });
-
-          // No equivalent for "rewarded" and "happyTime" in the CoolMathGames SDK
         },
         hasAdblock() {
           return false;
@@ -630,31 +429,17 @@ globalThis.WebSdkWrapper = (function () {
             if (currentSdk.implementation.preInit)
               await currentSdk.implementation.preInit(debug, data);
             if (currentSdk.scriptSrc) {
-              const onInit = async () => {
-                sdk = currentSdk.sdk;
-                currentSdk.implementation.setUpEventListeners();
-                if (currentSdk.implementation.init)
-                  await currentSdk.implementation.init(debug, data);
-                resolve();
-              };
-
-              if (currentSdk.scriptSrc instanceof Array) {
-                await Promise.all(
-                  currentSdk.scriptSrc.map(
-                    (src) =>
-                      new Promise((resolve) => {
-                        addScript(src, currentSdk.name + "-jssdk", resolve);
-                      })
-                  )
-                );
-                onInit();
-              } else {
-                addScript(
-                  currentSdk.scriptSrc,
-                  currentSdk.name + "-jssdk",
-                  onInit
-                );
-              }
+              addScript(
+                currentSdk.scriptSrc,
+                currentSdk.name + "-jssdk",
+                async () => {
+                  sdk = currentSdk.sdk;
+                  currentSdk.implementation.setUpEventListeners();
+                  if (currentSdk.implementation.init)
+                    await currentSdk.implementation.init(debug, data);
+                  resolve();
+                }
+              );
             } else {
               resolve();
             }
@@ -686,9 +471,7 @@ globalThis.WebSdkWrapper = (function () {
       listen("unmute", fn);
     },
     unmute() {
-      setTimeout(() => {
-        dispatch("unmute");
-      }, 500);
+      dispatch("unmute");
     },
     onUnlockAllLevels(fn) {
       window.unlockAllLevels = fn;
@@ -731,7 +514,7 @@ globalThis.WebSdkWrapper = (function () {
     },
     interstitial() {
       sdkContext.lastRequestedAd = "interstitial";
-      if (!currentSdk || !currentSdk.hasAds || currentSdk.noInterstitial) {
+      if (!currentSdk || !currentSdk.hasAds) {
         dispatch("adStarted", sdkContext.lastRequestedAd);
         return Promise.resolve(false);
       }
@@ -749,7 +532,7 @@ globalThis.WebSdkWrapper = (function () {
     },
     rewarded() {
       sdkContext.lastRequestedAd = "rewarded";
-      if (!currentSdk || !currentSdk.hasAds || currentSdk.noRewarded) {
+      if (!currentSdk || !currentSdk.hasAds) {
         dispatch("adStarted", sdkContext.lastRequestedAd);
         return Promise.resolve(false);
       }
@@ -770,14 +553,6 @@ globalThis.WebSdkWrapper = (function () {
     },
     hasAds() {
       return currentSdk && currentSdk.hasAds ? 1 : 0;
-    },
-    hasInterstitialAds() {
-      return currentSdk && currentSdk.hasAds && !currentSdk.noInterstitial
-        ? 1
-        : 0;
-    },
-    hasRewardedAds() {
-      return currentSdk && currentSdk.hasAds && !currentSdk.noRewarded ? 1 : 0;
     },
   };
   return Wrapper;
